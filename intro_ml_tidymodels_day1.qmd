@@ -235,7 +235,7 @@ format:
 
 - Requerem, em geral, mais espaço de armazenamento;
 
-- Estimado em torno de 80% dos dados das empresas;
+- Estimado em torno de 80% dos dados das empresas.
 
 # Pré-processamento de dados tabulares
 
