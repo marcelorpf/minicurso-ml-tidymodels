@@ -1,10 +1,662 @@
 ---
 title: "Introdução à Aprendizagem de Máquina com Tidymodels"
-author: "Marcelo Ferreira"
-format: beamer
+subtitle: "<br>XV Semana de Estatística - UFES, Vitória/ES <br> 7 a 8 de novembro de 2024"
+author: "Prof. Marcelo R. P. Ferreira"
+institute: "DE/UFPB -- PPGMDS/UFPB"
+format:
+  revealjs:
+    theme: beige
+    transition: slide
+    footer: "Introdução à Aprendizagem de Máquina com Tidymodels - [Prof. Marcelo R. P. Ferreira](http://www.de.ufpb.br/~marcelo)"
+    slide-number: true
+    show-slide-number: all
+    embed-resources: true
+    include-in-header:
+      text: |
+        <style>
+        #title-slide .title {
+          font-size: 2.5em;
+          color: #b22222;
+        }
+        .caption {
+          text-align: center;
+        }
+        </style>
 ---
 
-## Quarto
+## Quem sou eu? {.smaller}
+:::: {.columns}
 
-Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>. bla bla bla
+::: {.column width="40%"}
+![](eu.png){fig.align=center}
+:::
 
+::: {.column width="60%"}
+- Na maior parte do tempo eu sou pai de duas meninas, professor, cientista e cervejeiro caseiro.
+- Faço parte do [Departamento de Estatística](https://www.ufpb.br/de) da [UFPB](https://www.ufpb.br) desde dezembro de 2008 e do [Programa de Pós-graduação em Modelos de Decisão e Saúde](https://sigaa.ufpb.br/sigaa/public/programa/portal.jsf?id=1895) (PPGMDS/UFPB) desde novembro de 2022.
+- Formação acadêmica:
+  - Graduação em Estatística pela UFPE;
+  - Mestrado em Estatística pela UFPE;
+  - Doutorado em Ciência da Computação pela UFPE;
+  - Pós-doutorado em Aprendizagem de Máquina na RWTH Aachen University, Alemanha.
+:::
+
+::::
+
+## Quem são vocês? {.smaller}
+
+- Possui conhecimento básico sobre a linguagem `R`.
+
+- Tem alguma familiaridade com o dialeto `tidyverse` e com o uso de *pipe* (`%>%` ou `|>`).
+
+- Compreende conceitos básicos de estatística.
+
+- Não necessariamente é um especialista (ou mesmo um intermediário) em modelagem estatística ou aprendizagem de máquina.
+
+## Qual é o nosso plano? {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+**Dia 1**:
+
+- Aprendizagem de máquina
+  - Conceitos básicos;
+  - Tipos de Aprendizagem de Máquina;
+  - Dados estruturados e não-estruturados;
+  - Pré-processamanto de dados;
+  - Avaliação de modelos;
+  - Particionamento de dados:
+    - *Holdout* e $K$-*fold cross-validation*;
+  - Otimização de hiperparâmetros:
+    - *Grid search* e *Grid search* via *racing*.
+:::
+
+::: {.column width="50%"}
+**Dia 2**:
+:::
+
+::::
+
+# Conceitos básicos em Aprendizagem de Máquina
+
+## Aprendizagem de Máquina {.smaller}
+
+- Aprendizagem de Máquina (AM) ou *Machine Learning* (*ML*) é uma subárea da Inteligência Artificial que estuda modelos e algoritmos de aprendizado a partir de dados.
+
+- Os modelos ou algoritmos são determinados pelo tipo de dado que se tem disponível e pelo tipo de tarefa a ser executada.
+
+- Esses modelos são automatizados de modo a melhorarem o processo de aprendizagem com base em suas experiências, sem a necessidade de serem reprogramados (ou seja, sem qualquer assistência humana).
+
+- O produto dos modelos ou algoritmos são coeficientes, pesos ou regras e o processo de aprendizagem se dá pela atualização dessas características a partir de novas experiências (novos dados).
+
+- Originalmente, os métodos de AM eram de cunho estritamente computacional. Mas, a partir do final dos anos 90, passaram a ter muitas inserseções com a estatística.
+
+## Aprendizagem de Máquina {.smaller}
+
+![O que é aprendizagem de máquina? Créditos da imagem: [https://vas3k.com/blog/machine_learning/](https://vas3k.com/blog/machine_learning/)](ml.jpeg)
+
+## Mas, o que é aprender? {.smaller}
+
+- Ganhar conhecimento através do estudo, experiência ou sendo ensinado;
+
+- Aprendizagem X Aprendizado
+  - Aprendizagem: é o processo pelo qual se adquire o conhecimento $\rightarrow$ algoritmos;
+  - Aprendizado é o conhecimento adquirido $\rightarrow$ modelos;
+  
+ - Em Aprendizagem de Máquina, focamos no estudo de algoritmos para adquirir descrições estruturais (modelos) sobre exemplos de dados;
+ 
+ - Os algoritmos da Aprendizagem de Máquina permitem que escrevamos programas cujo desempenho tende a melhorar à medida que "ganham experiência";
+ 
+ - Essa experiência corresponde aos dados que são fornecidos ao programa;
+ 
+ - Os algoritmos buscam extrair hipóteses dos dados.
+ 
+## Tarefa, Medida e Experiência {.smaller}
+ 
+- De uma maneira geral, o uso da Aprendizagem de Máquina para solucionar uma tarefa envolve:
+  - Otimizar a realização de uma tarefa $T$;
+  - Em relação a uma medida de desempenho $P$;
+  - Com base na experiência $E$;
+  
+- Exemplo:
+
+:::: {.columns}
+
+::: {.column width="35%"}
+![Base de dados `mnist`](mnist.png){fig-align='center'}
+:::
+
+::: {.column width="65%"}
+- Tarefa: reconhecer e classificar caracteres manuscritos;
+- Medida: porcentagem de caracteres classificados corretamente;
+- Experiência: base de dados de caracteres manuscritos com a respectiva classificação.
+:::
+
+::::
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+![Aprendizagem de Máquina Clássica. Créditos da imagem: [https://vas3k.com/blog/machine_learning/](https://vas3k.com/blog/machine_learning/)](classical_ml.jpeg){fig-align='center'}
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+![Visão mais ampla da Aprendizagem de Máquina. Créditos da imagem: [https://vas3k.com/blog/machine_learning/](https://vas3k.com/blog/machine_learning/)](wider_ml_definition.jpeg){fig-align='center'}
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+- Aprendizagem supervisionada:
+  - O algoritmo de aprendizagem recebe um conjunto de exemplos de treinamento em que um rótulo alvo é conhecido;
+  - Cada exemplo é descrito por um vetor de valores (variáveis) e pelo rótulo (classe ou valor alvo) associado ;
+  - Inclui tarefas de classificação ($\hat{y} = \textrm{arg}\max_y P(Y=y|X=\mathbf{x})$) e de regressão ($\hat{y} = \mathbb{E}[Y|X=\mathbf{x}]$);
+  
+![Classificação X Regressão](regxclass.jpg){fig-align='center'}
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- Exemplos de métodos supervisionados para a tarefa de classificação:
+  - Regressão Logística;
+  - $K$-NN;
+  - Redes Neurais Artificiais;
+  - Árvores de Classificação;
+  - *Support Vector Machines*;
+  - *Extreme Gradient Boosting*;
+  - *Random Forests*.
+:::
+
+::: {.column width="50%"}
+- Exemplos de métodos supervisionados para a tarefa de regressão:
+  - Regressão Linear Múltipla;
+  - $K$-NN;
+  - Redes Neurais Artificiais;
+  - Árvores de Regressão;
+  - *Support Vector Machines*;
+  - *Extreme Gradient Boosting*;
+  - *Random Forests*.
+:::
+
+::::
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+- Aprendizagem não-supervisionada:
+  - O indutor analisa os exemplos fornecidos e tenta determinar se existem padrões previamente desconhecidos nos dados;
+  - Comumente, o objetivo é encontrar $P(X)$, ou seja, a distribuição de probabilidade de $X$;
+  - Tarefas não-supervisionadas incluem: agrupamento, redução da dimensionalidade, detecção de anomalias e regras de associação;
+  
+![Ilustração da tarefa de agrupamento](agrupamento.jpg){fig-align='center'}
+
+## Tipos de Aprendizagem de Máquina {.smaller}
+
+- Aprendizagem por reforço:
+  - Envolve situações em que um ou mais agentes aprendem por tentativa e erro ao atuar sobre um ambiente dinâmico;
+  - Não há uma fonte externa de exemplos. Há apenas a própria experiência do agente;
+  - É necessário definir que ações o agente pode desempenhar e qual é a medida de desempenho.
+
+![Exemplo de um sistema de aprendizado por reforço](chrome.png){fig-align='center'}
+
+# Os benditos dados...
+
+## Dados tabulares ou estruturados {.smaller}
+
+- Atributos/Variáveis podem ser físicos ou abstratos, como sintomas;
+- Cada exemplo/observação é descrito por um conjunto de variáveis de entrada ou vetor de características;
+- Cada exemplo corresponde a uma ocorrência/observação;
+- Os atributos estão associados a propriedades das observações;
+- Os dados que usamos para treinar nossos modelos são agregados em um **conjunto ou base de dados** (*data set* ou *dataset*);
+- O conjunto de dados costuma ser representado por uma matriz $\mathbf{X}_{n \times p}$
+  - $n$ é o número de instâncias;
+  - $p$ é o número de atributos de cada observação e define a dimensionalidade do espaço do problema.
+  
+## Dados tabulares ou estruturados {.smaller}
+
+![](dados.png){fig-width='center'}
+
+- Este conjunto aparentemente tem $p=10$ variáveis;
+
+- No entanto, a primeira e a segunda são apenas identificadores de paciente;
+
+- E a última, que indica o diagnóstico, possivelmente será selecionada como alvo em uma tarefa de classificação, sendo tratada como uma variável separada, digamos, $Y$;
+
+- Portanto, $p=7$.
+
+## Dados não-estruturados {.smaller}
+
+- Dados não-estruturados representam múltiplos tipos de dados que não podem ser facilmente analisados ou categorizados;
+
+- Usulalmente são armazenados em formatos nativos;
+
+- Não podem ser organizados em linhas e colunas;
+
+- Imagens, áudio, video, arquivos de texto, postagens em redes sociais, mensagens em aplicativos de comunicação, etc.;
+
+- Requerem, em geral, mais espaço de armazenamento;
+
+- Estimado em torno de 80% dos dados das empresas;
+
+# Pré-processamento de dados tabulares
+
+## Pré-processamento de dados tabulares {.smaller}
+
+- Antes de alimentar um algoritmo de aprendizagem de máquina com o conjunto de dados observados, comumente precisamos realizar diversas atividades de preparação dos dados, incluindo:
+  - Eliminação manual de atributos;
+  - Integração de dados;
+  - Amostragem;
+  - Balanceamento;
+  - Limpeza;
+  - Redução de dimensionalidade;
+  - Transformação.
+
+## Pré-processamento de dados tabulares {.smaller}
+
+- O objetivo é melhorar a qualidade dos dados, i.e., tornar mais fácil o ajuste de modelos;
+
+- Minimizam problemas de ruídos, anomalias/outliers, valores/rótulos incorretos, duplicados ou ausentes;
+
+- Também podem adequar os dados para uso de determinados algoritmos, e.g. algoritmos com entradas exclusivamente numéricas.
+
+![](iceberg.jpeg){fig-align='center'}
+
+## Eliminação manual de atributos {.smaller}
+
+- Removemos atributos que não contribuem para a construção dos modelos;
+- Nesse momento, o conhecimento e a experiência dos especialistas são fundamentais.
+
+![](hospital-id.png){fig.align='center'}
+
+## Integração de dados {.smaller}
+
+- Essa atividade trata da junção de duas ou mais bases de dados que possuem informações sobre as mesmas observações;
+
+- Devemos buscar atributos comuns nos conjuntos que serão combinados;
+  - Exemplos: CPF, CNPJ e identificadores de uma maneira geral, além de outros atributos que podem estar repetidos;
+
+- Atributos cruzados devem ter um valor único para cada observação.
+
+## Amostragem de dados {.smaller}
+
+- Alguns algoritmos de aprendizagem de máquina podem ter dificuldade de lidar com grandes volumes de dados;
+
+- Assim, torna-se útil obter uma amostra **representativa** dos dados para treinar o modelo;
+  - Os dados da amostra devem seguir a mesma distribuição dos dados originais (qual?);
+  
+- Diferentes amostras podem gerar modelos diferentes.
+
+## Balanceamento de dados {.smaller}
+
+- Em certas aplicações (como na medicina), é comum que uma classe seja muito mais frequente do que outra;
+
+- Nesses casos, o modelo de AM pode aprender a "chutar" sempre a classe mais frequente;
+
+- Soluções:
+  - Equalizar os tamanhos das classes
+    - Subamostragen (*Undersampling*);
+    - Sobreamostragem (*Oversampling*);
+    - SMOTE (*Synthetic Minority Oversampling Technique*);
+  - Classificação baseada em custos;
+  - Ajustar um modelo por classe.
+
+## Balanceamento de dados {.smaller}
+
+![Ilustração de Undersampling e Oversampling](over-under-sampling.png){fig-align='center' width="65%"}
+
+![Ilustração do método SMOTE](smote.png){fig-align='center' width="65%"}
+
+## Limpeza dos dados {.smaller}
+
+- Remove problemas relacionados à qualidade dos dados;
+
+- Dados ruidosos: erros de registro, variações de qualidade de sinal.
+  - Diferente de outliers;
+  
+- Inconsistentes: contradizem valores de outros atributos do mesmo objeto;
+
+- Redundantes: dois ou mais objetos/atributos com os mesmos valores;
+
+- Incompletos (com ausência de valores).
+
+![](limpeza.png){fig-align='center'}
+
+## Dados incompletos {.smaller}
+
+- Possibilidades de correção:
+  - Eliminar instâncias/colunas com valores ausentes;
+  - Usar média/moda/mediana dos valores conhecidos;
+  - Criar um novo valor que indique o atributo tem valor faltante;
+  - Estimar a distribuição conjunta dos atributos para depois preencher os faltantes com os valores mais prováveis;
+  - Usar algoritmos capazes de lidar com dados ausentes.
+  
+## Dados inconsistentes {.smaller}
+
+- Problemas na anotação dos dados podem resultar em atributos de entrada que não explicam o atributo alvo/classe.
+
+![](inconsistente.png){fig-align='center'}
+
+## Dados redundantes {.smaller}
+
+- O mesmo atributo pode aparecer em dois formatos diferentes. Exemplo: idade X data de nascimento;
+
+- Atributos podem ser altamente correlacionados
+  - Não há acréscimo de informação ao manter os dois;
+  - Mantém-se apenas um;
+  - Boa parte dos algoritmos de AM assume que não há correlação entre atributos.
+  
+## *Outliers* {.smaller}
+
+- Dados que diferem bastante dos outros elementos do conjunto de dados ou de sua classe;
+
+- Podem ser retirados ou mantidos, caso deseje-se gerar modelos que modelam a sua existência;
+
+- Existem técnicas cujo objetivo é detectar outliers.
+
+## Transformação de dados {.smaller}
+
+- Frequentemente é necessário transformar os tipos ou valores dos atributos. Pode-se, por exemplo, discretizar valores numéricos ou transformá-los em intervalos;
+
+- Pode-se transformar atributos qualitativos com $k$ categorias em $k$ ou $k-1$ atributos binários: *One-hot-encoding* e Variáveis *dummy*.
+  - Se existirem muitas categorias, isso pode tornar a dimensão do muito alta. Nesse caso, pode-se usar *frequency encoding*, em que as categorias são substituídas por suas frequências;
+  
+- Quando os atributos têm escalas muito diferentes, fazemos normalização:
+
+:::: {.columns}
+
+::: {.column width="50%"}
+$$
+X_{novo} = \frac{X - X_{min}}{X_{max} - X_{min}},
+$$
+
+Em que $X_{min}$ é o valor mínimo e $X_{max}$ é o valor máximo. Novos valores no intervalo $[0, 1]$.
+:::
+
+::: {.column width="50%"}
+$$
+Z = \frac{X - \hat{\mu}}{\hat{\sigma}},
+$$
+
+Onde $\hat{\mu}$ é a média amostral e $\hat{\sigma}$ é o desvio-padrão amostral. Essa transformação lida melhor com *outliers*.
+:::
+
+::::
+
+## Avaliação de modelos {.smaller}
+
+- Para o contexto de aprendizado supervisionado, seja $\mathbf{X}$ um vetor de variáveis de entrada, sendo suas componentes denotadas por $X_{j}$, com $j=1,\ldots,p$. Enquanto a variável de saída será denotada por ${Y}$;
+
+- Tipicamente $\mathbf{X} \in \mathbb{R}^p = \mathcal{X}$ e $Y \in C = \mathcal{Y} \subseteq  \mathbb{R}$, onde $C=\{1,2,\ldots,K\}$ é o conjunto dos índices das classes;
+
+- Nosso interesse está na relação
+$$
+f: \mathcal{X} \rightarrow \mathcal{Y}
+$$
+$$
+\mathbf{x} \rightarrow f(\mathbf{x});
+$$
+
+- Seja $S = \left\lbrace \left( \mathbf{x}_{1},y_{1}\right) \ldots \left( \mathbf{x}_{n},y_{n}\right) \right\rbrace$ contido em $\mathcal{X} \times \mathcal{Y}$;
+
+- Desejamos encontrar a função  $\hat{f}: \mathcal{X} \rightarrow \mathcal{Y}$ usando $S$ tal que 
+$$
+\hat{f}(\mathbf{x}) \approx f(\mathbf{x}),\quad\forall\mathbf{x} \in \mathcal{X}.
+$$
+
+## Avaliação de modelos {.smaller}
+
+- Mas, como avaliamos o quão bem estamos estimando $f$?
+
+- Para a tarefa de refressão, a medida mais comumente utilizada é o erro quadrático médio (*MSE*), dado por:
+$$
+MSE=\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{f}(\mathbf{x}_i))^2;
+$$
+- Um valor pequeno para o *MSE* indica que as respostas previstas estão próximas das respostas verdadeiras;
+
+- Outras medidas que são utilizadas em tarefas de regressão são: o erro absoluto médio (*MAE*) e o erro percentual absoluto médio (*MAPE*).
+
+## Avaliação de modelos {.smaller}
+
+- Para a tarefa de classificação, a medida mais comumente utilizada é a taxa de erro de classificação ou, com interpretação em sentido oposto, a acurácia;
+
+- É comum (e útil) a construção de uma matriz conhecida por matriz de confusão;
+
+- Essa matriz é uma tabela de contingência entre as classes preditas e as classes verdadeiras (conhecidas);
+
+- Outras medidas tipicamente utilizadas são:
+  - $\textrm{F}_1$-escore;
+  - Área sob a curva ROC (AUC ou AUROC);
+  - Precisão;
+  - Especificidade;
+  - Sensibilidade (Cobertura, Revocação ou *Recall*);
+  - etc.
+  
+## Avaliação de modelos {.smaller}
+
+<br>
+
+<br>
+
+![Matriz de confusão para o caso binário e medidas de avaliação](confusion_matrix.png){fig-align='center'}
+
+## O sonho da matriz de confusão perfeita {.smaller}
+
+- Isso pode acontecer em treinamento, mas é muito improvável em teste e constuma indicar sobreajuste (*overfitting*).
+
+![Exemplo de matriz de confusão perfeita para o caso binário](perfect_cm.jpeg){fig-align='center'}
+
+## Identificando problemas na matriz de confusão {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+<br>
+
+![](exemplo_cm1.jpeg)
+:::
+
+::: {.column width="50%"}
+
+<br>
+
+\begin{align*}
+Acc&=\frac{TP+TN}{TP+FP+TN+FN}\\
+&=\frac{10+1000}{10+20+1000+40}\\
+&=\frac{1010}{1070}\\
+&=0{,}94.
+\end{align*}
+
+Neste exemplo, temos alta acurácia: só erramos 60 observações, dentre 1070.
+:::
+
+::::
+
+## Identificando problemas na matriz de confusão {.smaller}
+
+- Vamos calcular a precisão e a cobertura (*recall*), para avaliar o desempenho com relação à classe positiva.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+![](exemplo_cm1.jpeg)
+:::
+
+::: {.column width="50%"}
+\begin{align*}
+Prec&=\frac{TP}{TP+FP}\\
+&=\frac{10}{10+20}=0{,}33\\
+Rec&=\frac{TP}{TP+FN}\\
+&=\frac{10}{10+40}=0{,}20.
+\end{align*}
+
+Apesar da alta acurácia, o classificador tem péssimo desempenho para a classe positiva.
+:::
+
+::::
+
+## Identificando problemas na matriz de confusão {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+<br>
+
+![](exemplo_cm2.jpeg)
+:::
+
+::: {.column width="50%"}
+
+<br>
+
+\begin{align*}
+Acc&=\frac{TP+TN}{TP+FP+TN+FN}\\
+&=\frac{1020}{1070}\\
+&=0{,}95.
+\end{align*}
+
+Na verdade, um classificador que apenas "chute" que todas as observações são da classe negativa tem maior acurácia.
+:::
+
+::::
+
+## Identificando problemas na matriz de confusão {.smaller}
+
+- Portanto, é importante não "confiar cegamente" no resultado de acurácia de seu classificador, principalmente se a proporção de observações de uma classe for muito maior do que a proporção de observações da outra;
+
+- Uma boa regra é ter em mente as proporções das classes no conjunto de dados: você deve esperar que seu classificador tenha acurácia pelo menos maior do que a proporção da maior classe.
+
+![](confiar.jpeg){fig-align='center'}
+
+## *Over/Underfitting* (Sobre/Sob-ajuste) {.smaller}
+
+<br>
+
+<br>
+
+![](overunder.jpeg){fig-align='center'}
+
+## *Over/Underfitting* (Sobre/Sob-ajuste) {.smaller}
+
+- Essas condições de ajuste podem ser detectadas se compararmos as acurácias ou matrizes de confusão de treinamento e de teste;
+
+- *Underfitting* mostrará desempenhos de treinamento e teste parecidos e ruins;
+
+- *Overfitting* aparecerá como um desempenho de treinamento muito bom (às vezes perfeito) acompanhado de desempenho de teste péssimo;
+
+- Ajuste apropriado aparece como desempenhos de treinamento e teste parecidos e razoáveis/bons.
+
+## *Over/Underfitting* (Sobre/Sob-ajuste) em regressão {.smaller}
+
+<br>
+
+<br>
+
+![](reg_overunder.jpeg){fig-align='center'}
+
+# Particionamento de dados
+
+## Particionamento de dados {.smaller}
+
+- Precisamos lembrar que os conjuntos de dados que utilizamos para treinar e testar modelos são, em geral, amostras, e não a população inteira;
+
+- Além disso, raramente podemos garantir que as amostras foram obtidas seguindo processos estatisticamente corretos;
+
+- Para tomarmos decisões com significância estatística, precisamos usar nossas amostras de forma que possamos extrair o máximo de informação;
+
+- Algumas estratégias nos ajudam simular quão bem um modelo de aprendizagem de máquina é capaz de generalizar seu aprendizado na prática.
+
+
+## _Holdout_ {.smaller}
+
+- *Holdout* consiste em particionar nosso conjunto de dados em dois conjuntos disjuntos, um conjunto de treinamento, que usamos para treinar os modelos, e um conjunto de teste, usado para avaliar o poder de generalização dos modelos;
+
+- Não há uma regra estabelecida para o percentual de observações nos conjuntos de treinamento e teste;
+
+- Em geral seleciona-se entre 70% e 80% das amostras para o conjunto de treinamento, e o restante para o conjunto de teste;
+
+- Para que as proporções de observações entre as classes (tarefa de classificação) ou entre quantis determinados da variável alvo (tarefa de regressão) sejam mantidas, deve-se usar amostragem aleatória estratificada;
+
+- A fim de se avaliar os modelos em diferentes subamostras pode-se repetir o processo de particionamento um número de vezes (*holdout* repetido).
+
+## _Holdout_ {.smaller}
+
+![Esquema de particionamento *holdout*](holdout.png){fig-align='center'}
+
+## $K$-*fold cross-validation* {.smaller}
+
+- Validação cruzada é usada para avaliar a capacidade do modelo de reagir corretamente a dados que não foram usados para treiná-lo;
+
+- Pode ajudar a detectar problemas como over/underfitting e seleção enviesada de amostras;
+
+- Seu funcionamento é simples: divide-se o conjunto em $K$ subconjuntos (*folds*) e, a cada rodada, usa-se um subconjunto para teste (validação) e os outros para treinamento;
+
+- Esse processo faz com que os conjuntos de treinamento e teste (validação) sejam disjuntos;
+
+- Assim como no *holdout*, deve-se utilizar amostragem aleatória estratificada.
+
+## $K$-*fold cross-validation* {.smaller}
+
+![Esquema de particionamento $K$-*fold cross-validation*](kfoldcrossvalidation.png){fig-align='center'}
+
+# Otimização de hiperparâmetros
+
+## Otimização de hiperparâmetros {.smaller}
+
+- Um hiperparâmetro é um parâmetro que controla o processo de aprendizagem.
+  - Note a diferença para os parâmetros que são aprendidos pelo ajuste do modelo, como pesos de redes neurais ou coeficientes da regressão;
+
+- Cada algoritmo pode precisar de diferentes valores de hiperparâmetros que influenciam a capacidade de ajustar o modelo aos dados;
+
+- Assim, a otimização (*tuning*) de hiperparâmetros é um processo que busca encontrar a tupla de valores de hiperparâmetros que produzem o melhor modelo para um dado problema e uma dada métrica de avaliação.
+  - Costuma ser feita por meio de validação cruzada.
+
+## Otimização de hiperparâmetros {.smaller}
+
+![Esquema de particionamento *Holdout* combinado com $K$-*fold cross-validation*](holdout_kfoldcrossvalidation_v2.png){fig-align='center'}
+
+## *Grid search* {.smaller}
+
+- Trata-se de uma busca exaustiva através de todas as tuplas possíveis de hiperparâmetros dados valores aceitáveis para cada hiperparâmetro, fornecidos pelo usuário;
+
+- É necessário especificar uma métrica de performance;
+
+- Para parâmetros com suporte em subconjuntos de $\mathbb{R}$ (contínuos), é necessário definir limites e discretizar seus valores;
+
+- Por exemplo, para um classificador SVM com kernel RBF (Gaussiano) precisamos otimizar pelo menos dois hiperparâmetros: o parâmetro de regularização $C$ e a largura do kernel $\gamma$;
+
+## *Grid search* {.smaller}
+
+- Ambos são contínuos, então definimos um conjunto finito de valores razoáveis para nossa busca:
+            \begin{align*}
+                C &\in \{10, 100, 1000\}\\
+                \gamma &\in \{0.1, 0.2, 0.5, 1.0\}
+            \end{align*}
+
+- O *grid search* vai então treinar um SVM com cada par $(C, \gamma)$ possível e avaliá-lo no conjunto de validação;
+
+- Ao final do processo de validação cruzada, a melhor configuração $(C, \gamma)$ é retornada;
+
+- O processo todo é altamente paralelizável.
+
+## *Grid search via racing* {.smaller}
+
+- Um problema de *grid search* é que todos os modelos precisam ser treinados com todas as tuplas de hiperparâmetros em todas as subamostras do processo de validação cruzada;
+
+- Seria útil se, em algum ponto do processo de otimização, uma análise intermediária fosse realizada, eliminando as tuplas que produziram resultados muito ruins;
+
+- Em métodos de *racing*, o processo de otimização avalia todos os modelos em um subconjunto inicial das subamostras (amostras *burn in*);
+
+- Com base nas métricas de performance calculadas, algumas tuplas de hiperparâmetros não são consideradas para as subamostras subsequentes;
+
+- Essa medida, torna o processo de otimização dos hiperparâmetros mais rápido, peincipalmente para modelos com muitos hiperparâmetros a serem otimizados, como redes neurais e *extreme gradient boosting*.
+
+## Para terminar (por hoje...) {.smaller}
+
+- As bibliotecas de aprendizagem de máquina costumam ter implementações de métodos de otimização de hiperparâmetros (grid search, grid search via racing, random search, otimização bayesiana, algoritmos evolutivos, inteligência de enxames, etc.);
+
+- Para garantir a reprodutibilidade do código, é importante definir uma semente para o gerador de números aleatórios (em `R`, utilizando a função `set.seed()`).
+
+## Fim {.smaller}
+
+![](fim.jpeg){fig-align=center}
