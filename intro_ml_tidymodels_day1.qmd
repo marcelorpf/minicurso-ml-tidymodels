@@ -10,7 +10,9 @@ format:
     footer: "Introdução à Aprendizagem de Máquina com Tidymodels - [Prof. Marcelo R. P. Ferreira](http://www.de.ufpb.br/~marcelo)"
     slide-number: true
     show-slide-number: all
+    standalone: true
     embed-resources: true
+    self-contained-math: true
     include-in-header:
       text: |
         <style>
@@ -20,6 +22,12 @@ format:
         }
         .caption {
           text-align: center;
+        }
+        .title-slide h2 {
+          text-align: center;
+        }
+        .whiteslide {
+          background-color: white;
         }
         </style>
 ---
@@ -73,7 +81,30 @@ format:
 :::
 
 ::: {.column width="50%"}
+![](ml_brain.jpeg){fig-align='center'}
+:::
+
+::::
+
+## Qual é o nosso plano? {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
 **Dia 2**:
+
+- `tidymodels`
+  - Introdução;
+  - Particionamento de dados:`rsample`;
+  - O que faz um modelo: `parsnip`;
+  - Pré-processamento e feature engineering: `recipes`;
+  - Avaliação de modelos: `yardstick`;
+  - Otimização de hiperparâmetros: `tune`;
+  - Avaliando muitos modelos: `workflowsets`.
+:::
+
+::: {.column width="50%"}
+![](tidymodels.jpeg){fig-align='center'}
 :::
 
 ::::
@@ -197,6 +228,64 @@ format:
   - É necessário definir que ações o agente pode desempenhar e qual é a medida de desempenho.
 
 ![Exemplo de um sistema de aprendizado por reforço](chrome.png){fig-align='center'}
+
+## As duas culturas: Modelos X Algoritmos {.smaller}
+
+- A verdadeira "caixa-preta".
+
+![](blackbox.jpeg){fig-align='center'}
+
+## As duas culturas: Modelos X Algoritmos {.smaller}
+
+- Vamos assumir que a estimação será feita com base em $S$, uma amostra i.i.d. da distribuição conjunta de $(\mathbf{X},Y)$;
+
+- $S$ é comumente chamada de amostra de treinamento.
+
+![](estimacao.jpeg){fig-align='center'}
+
+## As duas culturas: Modelos X Algoritmos {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- *Data modeling culture*: Abordagem da modelagem estatística clássica.
+
+![](est_estoc.jpeg){fig-align='center'}
+
+- Exemplo:
+
+$$
+y_i=\beta_0+\beta_1x_{1i}+\cdots+\beta_px_{pi}+\varepsilon_i,
+$$
+
+$$
+\varepsilon_i\sim N(0,\sigma^2),\quad i=1,\ldots,n.
+$$
+
+:::
+
+::: {.column width="50%"}
+- *Algorithm modeling culture*: Aprendizagem de máquina.
+
+![](est_desc.jpeg){fig-align='center'}
+
+- Exemplo:
+
+$$
+y_i=f(\mathbf{x}_i) + \varepsilon_i,\quad i=1,\ldots,n.
+$$
+
+:::
+
+::::
+
+## As duas culturas: Modelos X Algoritmos {.smaller .nostretch}
+
+<br>
+
+<br>
+
+![](caixapreta.jpeg){fig-align='center' width="60%"}
 
 # Os benditos dados...
 
@@ -424,10 +513,11 @@ $$
 
 - Outras medidas tipicamente utilizadas são:
   - $\textrm{F}_1$-escore;
-  - Área sob a curva ROC (AUC ou AUROC);
   - Precisão;
   - Especificidade;
   - Sensibilidade (Cobertura, Revocação ou *Recall*);
+  - Curva ROC: Sensibilidade (Taxa de Verdadeiros Positivos) $\times$ $1-$Especificidade (Taxa de Falsos Positivos);
+  - Área sob a curva ROC (AUC ou AUROC);
   - etc.
   
 ## Avaliação de modelos {.smaller}
@@ -554,6 +644,30 @@ Na verdade, um classificador que apenas "chute" que todas as observações são 
 
 ![](reg_overunder.jpeg){fig-align='center'}
 
+## Curva ROC {.smaller}
+
+- A curva ROC é utilizada para visualizar as diferentes taxas de verdadeiros/falsos positivos de acordo com diferentes limiares.
+
+![Ilustração de uma curva ROC](roc_curve.jpeg){fig-align='center'}
+
+## Curva ROC {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- Idealmente, queremos que a forma da curva se aproxime ao máximo da forma de um triângulo, ou seja, queremos que a curva se aproxime ao máximo do canto superior esquerdo ou ponto $[0,1]$;
+
+- A área embaixo da curva ROC (AUC ou AUROC) indica o quão bom é o desempenho de um classificador independentemente do limiar;
+
+- Um classificador aleatório tem AUC$=0{,}5$.
+:::
+
+::: {.column width="50%"}
+![](roc_curve.jpeg){fig-align='center'}
+:::
+
+::::
+
 # Particionamento de dados
 
 ## Particionamento de dados {.smaller}
@@ -660,3 +774,13 @@ Na verdade, um classificador que apenas "chute" que todas as observações são 
 ## Fim {.smaller}
 
 ![](fim.jpeg){fig-align=center}
+
+## Obrigado pela Atenção! {.title-slide .whiteslide}
+
+<center>Marcelo Rodrigo Portela Ferreira</center>
+
+<center>[marcelorpf@gmail.com](marcelorpf@gmail.com)</center>
+
+![](logo.jpeg){fig-align='center'}
+
+<center>Material disponível em: [http://www.de.ufpb.br/~marcelo](http://www.de.ufpb.br/~marcelo)</center>
