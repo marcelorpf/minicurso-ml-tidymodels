@@ -13,6 +13,7 @@ format:
     standalone: true
     embed-resources: true
     self-contained-math: true
+    html-math-method: mathjax
     include-in-header:
       text: |
         <style>
@@ -501,15 +502,13 @@ MSE=\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{f}(\mathbf{x}_i))^2;
 $$
 - Um valor pequeno para o *MSE* indica que as respostas previstas estão próximas das respostas verdadeiras;
 
-- Outras medidas que são utilizadas em tarefas de regressão são: o erro absoluto médio (*MAE*) e o erro percentual absoluto médio (*MAPE*).
+- Outras medidas que são utilizadas em tarefas de regressão são: o erro absoluto médio (*MAE*), o erro percentual absoluto médio (*MAPE*) e o coeficiente de determinação ($R^2$).
 
 ## Avaliação de modelos {.smaller}
 
 - Para a tarefa de classificação, a medida mais comumente utilizada é a taxa de erro de classificação ou, com interpretação em sentido oposto, a acurácia;
 
-- É comum (e útil) a construção de uma matriz conhecida por matriz de confusão;
-
-- Essa matriz é uma tabela de contingência entre as classes preditas e as classes verdadeiras (conhecidas);
+- A construção da por matriz de confusão, que é uma tabela de contingência entre as classes preditas e as classes verdadeiras (conhecidas) também é comum;
 
 - Outras medidas tipicamente utilizadas são:
   - $\textrm{F}_1$-escore;
@@ -518,7 +517,7 @@ $$
   - Sensibilidade (Cobertura, Revocação ou *Recall*);
   - Curva ROC: Sensibilidade (Taxa de Verdadeiros Positivos) $\times$ $1-$Especificidade (Taxa de Falsos Positivos);
   - Área sob a curva ROC (AUC ou AUROC);
-  - etc.
+  - Kappa, etc.
   
 ## Avaliação de modelos {.smaller}
 
@@ -765,11 +764,11 @@ Na verdade, um classificador que apenas "chute" que todas as observações são 
 
 - Essa medida, torna o processo de otimização dos hiperparâmetros mais rápido, peincipalmente para modelos com muitos hiperparâmetros a serem otimizados, como redes neurais e *extreme gradient boosting*.
 
-## Para terminar (por hoje...) {.smaller}
+## Otimização de hiperparâmetros {.smaller}
 
 - As bibliotecas de aprendizagem de máquina costumam ter implementações de métodos de otimização de hiperparâmetros (grid search, grid search via racing, random search, otimização bayesiana, algoritmos evolutivos, inteligência de enxames, etc.);
 
-- Para garantir a reprodutibilidade do código, é importante definir uma semente para o gerador de números aleatórios (em `R`, utilizando a função `set.seed()`).
+- Para garantir a reprodutibilidade do código, é importante definir uma semente para o gerador de números aleatórios (em `R`, utilizando a função `set.seed()`) em todas as etapas que envolverem amostragem.
 
 ## Fim {.smaller}
 

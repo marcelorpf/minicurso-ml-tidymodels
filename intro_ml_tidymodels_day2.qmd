@@ -1,0 +1,649 @@
+---
+title: "Introdução à Aprendizagem de Máquina com Tidymodels"
+subtitle: "<br>XV Semana de Estatística - UFES, Vitória/ES <br> 7 a 8 de novembro de 2024"
+author: "Prof. Marcelo R. P. Ferreira"
+institute: "DE/UFPB -- PPGMDS/UFPB"
+format:
+  revealjs:
+    theme: beige
+    transition: slide
+    footer: "Introdução à Aprendizagem de Máquina com Tidymodels - [Prof. Marcelo R. P. Ferreira](http://www.de.ufpb.br/~marcelo)"
+    slide-number: true
+    show-slide-number: all
+    standalone: true
+    embed-resources: true
+    self-contained-math: true
+    html-math-method: mathjax
+    execute:
+      echo: true
+      eval: true
+      output: true
+      warning: true
+      message: true
+    include-in-header:
+      text: |
+        <style>
+        #title-slide .title {
+          font-size: 2.5em;
+          color: #b22222;
+        }
+        .caption {
+          text-align: center;
+        }
+        .title-slide h2 {
+          text-align: center;
+        }
+        .whiteslide {
+          background-color: white;
+        }
+        </style>
+---
+
+## Qual é o nosso plano? {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+**Dia 1**:
+
+- Aprendizagem de máquina
+  - Conceitos básicos;
+  - Tipos de Aprendizagem de Máquina;
+  - Dados estruturados e não-estruturados;
+  - Pré-processamanto de dados;
+  - Avaliação de modelos;
+  - Particionamento de dados:
+    - *Holdout* e $K$-*fold cross-validation*;
+  - Otimização de hiperparâmetros:
+    - *Grid search* e *Grid search* via *racing*.
+:::
+
+::: {.column width="50%"}
+![](ml_brain.jpeg){fig-align='center'}
+:::
+
+::::
+
+## Qual é o nosso plano? {.smaller}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+**Dia 2**:
+
+- `tidymodels`
+  - Introdução;
+  - Particionamento de dados:`rsample`;
+  - O que constitui um modelo: `parsnip`;
+  - Pré-processamento e feature engineering: `recipes`;
+  - Avaliação de modelos: `yardstick`;
+  - Otimização de hiperparâmetros: `tune`;
+  - Avaliando muitos modelos: `workflowsets`.
+:::
+
+::: {.column width="50%"}
+![](tidymodels.jpeg){fig-align='center'}
+:::
+
+::::
+
+# A biblioteca `tidymodels`
+
+## A biblioteca `tidymodels` {.smaller}
+
+![](tidymodels_site.jpeg){fig-align='center'}
+
+## A biblioteca `tidymodels` {.smaller}
+
+- Assim como a `tidyverse` é uma meta-biblioteca que consiste de diversas bibliotecas como `ggplot2` e `dplyr`, [`tidymodels`](https://www.tidymodels.org/) é uma meta-biblioteca que consiste das seguintes bibliotecas:
+  - `rsample`: funções para particionamento e reamostragem eficiente de dados;
+  - `parsnip`: interface unificada para um amplo conjunto de modelos que podem ser testados sem que o usuário se preocupe com diferenças de sintaxe;
+  - `recipes`: pré-processamento e *feature engineering*;
+  - `tune`: otimização de hiperparâmetros;
+  - `yardstick`: funções para avaliar a efetividade de modelos através de medidas de performance.
+  
+## A biblioteca `tidymodels` {.smaller}
+
+- Outras bibliotecas são carregadas junto com `tidymodels`, como, por exemplo:
+  - `workflows`: junta pré-processamento, modelagem (treinamento) e pós-processamento;
+  - `workflowsets`: cria conjuntos de workflows;
+  - `broom`: converte a informação contida em objetos comuns de `R` para o formato *tidy*;
+  - `dials`: cria e gerencia hiperparâmetros de ajuste e *grids* de hiperparâmetros.
+  
+- Bibliotecas adicionais dentro do fluxo de trabalho de aprendizagem de máquina:
+  - `finetune`: permite um processo de otimização de hiperparâmetros mais eficiente;
+  - `DALEX`: ferramentas oara interpretação de modelos;
+  - `DALEXtra`: extensões para a biblioteca `DALEX`.
+
+## A biblioteca `tidymodels` {.smaller}
+
+```{r}
+library(tidymodels)
+```
+
+## Conjunto de dados {.smaller}
+
+- Vamos considerar, inicialmente, um conjunto de dados bastante conhecido, o *Palmer Station penguin data*, que contém mensurações obtidas de diferentes espécies de pinguins.
+
+```{r}
+library(tidyverse)
+
+df <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
+```
+
+## Conjunto de dados {.smaller}
+
+```{r}
+glimpse(df)
+```
+
+```{r}
+df %>% summary()
+```
+
+## Conjunto de dados {.smaller}
+
+- Por hora, vamos excluir as linhas que contém valores ausentes:
+
+```{r}
+df <- df[complete.cases(df),]
+```
+
+- Também vamos definir as variáveis qualitativas como fatores:
+```{r}
+df <- df %>%
+  mutate(across(where(is.character), as.factor))
+
+glimpse(df)
+```
+
+## Particionamento de dados:`rsample` {.smaller}
+
+- Vamos particionar o conjunto de dados em 75% para treinamento e 25% para teste;
+
+- Para isso, vamos utilizar a função `initial_split()` da biblioteca `rsample`.
+
+```{r}
+set.seed(1326)
+df_split <- df %>%
+  initial_split(prop = .75, strata = sex)
+
+df_split
+```
+
+- Os conjuntos de treinamento e de teste são obtidos através das funções `training()` e `testing()`, respectivamente.
+
+```{r}
+trn_df <- df_split %>%
+  training()
+
+tst_df <- df_split %>%
+  testing()
+```
+
+## Particionamento de dados:`rsample` {.smaller}
+
+- Com o conjunto de treinamento vamos gerar partições para um processo de validação cruzada com 5 `folds`, utilizando a função `vfold_cv()`.
+
+```{r}
+set.seed(1326)
+df_cv <- trn_df %>%
+  vfold_cv(v = 5, strata = sex)
+
+df_cv
+```
+
+## Análise exploratória de dados {.smaller}
+
+- Explore o conjunto de treinamento por conta própria!
+  - Explore a distribuição da variável alvo, `sex`;
+  - Verifique como se distribuem as variáveis numéricas;
+  - Como a variável alvo, `sex`, se relaciona com a variável `species`?
+  - Como a distribuição das variáveis numéricas difere entre as classes da variável alvo?
+  
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = sex)) +
+  geom_bar()
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = sex, fill = species)) +
+  geom_bar()
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = sex, fill = island)) +
+  geom_bar()
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = bill_length_mm, fill = sex, color = sex)) +
+  geom_density(alpha = .7)
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = bill_depth_mm, fill = sex, color = sex)) +
+  geom_density(alpha = .7)
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = flipper_length_mm, fill = sex, color = sex)) +
+  geom_density(alpha = .7)
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(x = body_mass_g, fill = sex, color = sex)) +
+  geom_density(alpha = .7)
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(flipper_length_mm, bill_length_mm, color = sex, size = body_mass_g)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~species)
+```
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+- Como você ajustaria um modelo linear em `R`?
+
+- Existem diversas maneiras de fazer isso, certo?
+
+- Por exemplo:
+  - `lm` para o modelo de regressão linear clássico;
+  - `glm` para modelos lineares generalizados;
+  - `glmnet` para regressão linear com regularização;
+  - `gls` para modelos lineares por mínimos quadrados generalizados;
+  - `keras` para regressão usando TensorFlow;
+  - `spark` para *big data*;
+  - `brulee` para regressão usando torch
+  
+## O que constitui um modelo: `parsnip` {.smaller}
+
+- Em `R`, existem diversas funções para o mesmo fim;
+
+- Essas funções, na maioria das vezes, possuem diferentes interfaces e recebem diferentes argumentos;
+
+- A biblioteca `parsnip` se propõe a resolver esse problema oferecendo uma interface padronizada.
+
+![](parsnip.jpeg){fig-align='center'}
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+- Para especificar um modelo com `parsnip`:
+  - Escolha um modelo (*model*);
+  - Especifique um motor computacional (*engine*);
+  - Defina o modo (*mode*).
+  
+### O que é cada parte dessas?
+
+- *model*: o tipo de modelo a ser utilizado. Por exemplo: regressão logística, redes neurais, floresta aleatória, etc.;
+
+- *engine*: a biblioteca a partir da qual *model* deve ser ajustado. Por exemplo: `glmnet`, `nnet`, `ranger`, etc.;
+
+- *mode*: especifica o tipo de tarefa: classificação (*classification*), regressão (*regression*) ou regressão para dados com censura (*censored regression*).
+  
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+- Escolha um modelo (*model*):
+```{r}
+rand_forest()
+```
+
+- Especifique um motor (*engine*):
+```{r}
+rand_forest() %>%
+  set_engine("randomForest")
+```
+
+- Defina o modo:
+```{r}
+rand_forest() %>%
+  set_engine("randomForest") %>%
+  set_mode("classification")
+```
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+::: {.r-fit-text}
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+Todos os modelos disponíveis estão listados em: [https://www.tidymodels.org/find/parsnip/](https://www.tidymodels.org/find/parsnip/)
+:::
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+![](parsnip_models.jpeg){fig-align='center'}
+
+## O que constitui um modelo: `parsnip` {.smaller}
+
+- Vamos definir alguns modelos que usaremos a seguir.
+```{r}
+tree_spec <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+knn_spec <- nearest_neighbor() %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+rf_spec <- rand_forest() %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+log_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+svm_spec <- svm_rbf() %>%
+  set_engine("kernlab") %>%
+  set_mode("classification")
+```
+
+## Fluxo de trabalho: `workflows` {.smaller}
+
+- Por que usar `workflows`?
+  - `workflows` lida melhor com novos dados do que funções de `R` base em termos de novos níveis de fatores;
+  - Pode ser usado em conjunto com outras ferramentas, como ferramentas de pré-processamento;
+  - Ajuda na organização quando estamos trabalhando com múltiplos modelos;
+  - `workflows` captura o processo de modelagem inteiro através das funções `fit()` e `predict()`.
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+tree_spec %>%
+  fit(sex ~ bill_length_mm+bill_depth_mm+flipper_length_mm+body_mass_g, data = trn_df)
+```
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+workflow() %>%
+  add_formula(sex ~ bill_length_mm+bill_depth_mm+flipper_length_mm+body_mass_g) %>%
+  add_model(tree_spec) %>%
+  fit(data = trn_df)
+```
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+tree_fit <- workflow() %>%
+  add_formula(sex ~ bill_length_mm+bill_depth_mm+flipper_length_mm+body_mass_g) %>%
+  add_model(tree_spec) %>%
+  fit(data = trn_df)
+
+tree_fit
+```
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+predict(tree_fit, new_data = tst_df)
+```
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+tree_fit %>% augment(new_data = tst_df)
+```
+
+```{r}
+tree_predictions <- tree_fit %>% augment(new_data = tst_df)
+tree_predictions$.pred_class
+```
+
+## Fluxo de trabalho: `workflows` {.smaller .scrollable}
+```{r}
+library(rpart.plot)
+tree_fit %>%
+  extract_fit_engine() %>%
+  rpart.plot(roundint = FALSE)
+```
+
+## Avaliação de modelos: `yardstick` {.smaller}
+
+- Como avaliamos se um modelo tem bom desempenho?
+
+- A biblioteca `yardstick` sornece funções para calcular diversas métricas de avaliação.
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  conf_mat(truth = sex, estimate = .pred_class)
+```
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  metrics(truth = sex, estimate = .pred_class)
+```
+
+## Avaliação de modelos: `yardstick` {.smaller}
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  conf_mat(truth = sex, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+## Avaliação de modelos: `yardstick` {.smaller}
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  accuracy(truth = sex, estimate = .pred_class)
+```
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  sensitivity(truth = sex, estimate = .pred_class)
+```
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  specificity(truth = sex, estimate = .pred_class)
+```
+## Avaliação de modelos: `yardstick` {.smaller .scrollable}
+```{r}
+penguins_metrics <- metric_set(accuracy, specificity, sensitivity, precision)
+
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  penguins_metrics(truth = sex, estimate = .pred_class)
+```
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  group_by(species) %>%
+  penguins_metrics(truth = sex, estimate = .pred_class)
+```
+
+## Avaliação de modelos: `yardstick` {.smaller}
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  roc_curve(truth = sex, .pred_female)
+```
+
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  roc_auc(truth = sex, .pred_female)
+```
+
+## Avaliação de modelos: `yardstick` {.smaller}
+```{r}
+tree_fit %>%
+  augment(new_data = tst_df) %>%
+  roc_curve(truth = sex, .pred_female) %>%
+  autoplot()
+```
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+
+- Podemos querer modificar nossas variáveis por diversas razões:
+  - O modelo requer que uma ou mais variáveis estejam em um formato específico (por exemplo, variáveis *dummy* para regressão linear);
+  - O modelo precisa que os dados tenham certas características (por exemplo, mesma escala para o $K$-NN);
+  - A saída é melhor predita quando uma ou mais colunas são transformadas de alguma forma (também conhecido por "engenharia de atributos" ou "*feature engineering*").
+    - Interações;
+    - Exansões polinomiais;
+    - Componentes principais;
+    - Dentre outras.
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+
+- A biblioteca `recipes` possui diversas funções para pré-processamento e *feature engineering*;
+
+- Uma "receita" é uma descrição de passos a serem executados em um conjunto de dados com o objetivo de prepará-lo para a análise.
+
+```{r}
+#| eval: false
+recipe(y ~ x1 + x2, data = df) %>%
+  step_*() %>%
+  step_*() ...
+```
+
+- Na receita, precisamos especificar a relação entre a variável de saída e as variáveis preditoras (uma fórmula) e o conjunto de dados;
+
+- Os passos são definidos pelos `step_*()`, onde `*` especifica a transformação desejada.
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+penguins_rec <- recipe(sex ~ ., data = trn_df)
+
+penguins_rec %>% summary()
+```
+
+- Esta receita apenas define os papeis de cada variável na análise.
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+
+- `step_dummy()`: cria variáveis *dummy* para preditores definidos como fatores;
+
+- `step_normalize()`: realiza padronização de variáveis preditoras;
+
+- `step_zv()`: elimina preditores com variância zero;
+
+- `step_corr()`: útil para lidar com preditores altamente correlacionados, encontrando o conjunto de preditores cujas correlações são menores do que um limiar;
+
+- `step_pca()`: extração de componentes principais;
+
+- Muito mais em: [https://www.tidymodels.org/find/recipes/](https://www.tidymodels.org/find/recipes/).
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+penguins_rec <- recipe(sex ~ ., data = trn_df) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors(), threshold = 0.9) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_poly(body_mass_g, degree = 2)
+```
+
+- `prep()`: estima os parâmetros dos passos definidos na receita para o conjunto de treinamento. Podemos aplicar esses passos a um outro conjunto de interesse, tipicamente, o conjunto de teste;
+
+- `juice()`: aplica os passos definidos na receita ao conjunto de dados de interesse.
+
+```{r}
+prepped_df <- penguins_rec %>%
+  prep() %>%
+  juice()
+```
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+prepped_df
+```
+
+- Ao usarmos `workflows`, no entanto, não há a necessidade de "extrair" com `prep()` e `juice()` os dados transformados pela receita, pois isso será feito implicitamente.
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+set.seed(1326)
+
+penguins_lr_wflow <- workflow() %>%
+  add_recipe(penguins_rec) %>%
+  add_model(log_spec)
+
+lr_fit <- penguins_lr_wflow %>%
+  fit(data = trn_df)
+```
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+lr_fit
+```
+
+## Pré-processamento e feature engineering: `recipes` {.smaller}
+```{r}
+#| warning: false
+#| message: false
+lr_fit %>% tidy(conf.int = TRUE)
+```
+
+## Pré-processamento e feature engineering: `recipes` {.smaller .nostretch}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+<br>
+
+<br>
+
+<br>
+
+> "Eu tava pensando nas receitas que eu vou fazer quando eu voltar pro Brasil"
+:::
+
+::: {.column width="50%"}
+![](rebeca_recipes.jpeg){fig-align='center' width="75%"}
+:::
+
+::::
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+## Fim {.smaller}
+
+![](fim.jpeg){fig-align=center}
+
+## Obrigado pela Atenção! {.title-slide .whiteslide}
+
+<center>Marcelo Rodrigo Portela Ferreira</center>
+
+<center>[marcelorpf@gmail.com](marcelorpf@gmail.com)</center>
+
+![](logo.jpeg){fig-align='center'}
+
+<center>Material disponível em: [http://www.de.ufpb.br/~marcelo](http://www.de.ufpb.br/~marcelo)</center>
