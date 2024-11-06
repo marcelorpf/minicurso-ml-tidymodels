@@ -128,6 +128,9 @@ library(tidymodels)
 ```{r}
 library(tidyverse)
 
+tidymodels_prefer()
+theme_set(theme_bw())
+
 df <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
 ```
 
@@ -814,7 +817,7 @@ final_res %>%
 
 ## Otimização de hiperparâmetros: *racing* {.smaller}
 
-- Relembrando, a ideia de *racing* é tornar o processo de *grid search* mais rápido.
+- Relembrando, a ideia de *racing* é tornar o processo de *grid search* mais rápido. A biblioteca `finetune` possui algumas extensões para a biblioteca `tune`.
 ```{r}
 #| warning: false
 #| message: false
@@ -910,6 +913,8 @@ rf_spec <- rand_forest(mtry = tune(),
 ::: {.column width="50%"}
 Agora, criaremos um `workflow_set` com a receita de pré-processamento e as especificações dos modelos:
 ```{r}
+library(glmnet)
+
 wflow_set = workflow_set(
   preproc = list(penguins_rec),
   models = list(
@@ -993,6 +998,85 @@ best_set_rf
 ```
 
 ## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+Ahgora, precisamos ajustar os modelos usando o conjunto de treinamento completo e fazer predições para o conjunto de teste.
+```{r}
+my_metrics <- metric_set(accuracy,roc_auc,f_meas,kap,
+                         precision,recall,spec)
+
+test_results_lr = grid_results %>% 
+   extract_workflow("lr_fit") %>% 
+   finalize_workflow(best_set_lr) %>% 
+   last_fit(split = df_split,
+            metrics = my_metrics)
+
+test_results_tree = grid_results %>% 
+   extract_workflow("tree_fit") %>% 
+   finalize_workflow(best_set_tree) %>% 
+   last_fit(split = df_split,
+            metrics = my_metrics)
+
+test_results_rf = grid_results %>% 
+   extract_workflow("rf_fit") %>% 
+   finalize_workflow(best_set_rf) %>% 
+   last_fit(split = df_split,
+            metrics = my_metrics)
+```
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+```{r}
+results <- as_tibble(cbind(
+  collect_metrics(test_results_lr)$.metric,
+  collect_metrics(test_results_lr)$.estimate,
+  collect_metrics(test_results_tree)$.estimate,
+  collect_metrics(test_results_rf)$.estimate))
+
+colnames(results) <- c("Metric","Logistic Regression","Decision Tree","Random Forest")
+results
+```
+
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+```{r}
+lr_pred <- test_results_lr %>%
+  collect_predictions()
+
+lr_pred
+```
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+```{r}
+lr_pred %>% 
+  conf_mat(sex, .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+```{r}
+lr_pred %>% 
+  roc_curve(sex, .pred_female) %>% 
+  autoplot()
+```
+
+## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+```{r}
+library(vip)
+
+test_results_lr %>% 
+  pluck(".workflow", 1) %>%   
+  extract_fit_parsnip() %>% 
+  vip()
+```
+
+## Versões e coisa e tal... {.smaller .scrollable}
+
+```{r}
+sessionInfo()
+```
 
 
 ## Fim {.smaller}
