@@ -149,10 +149,12 @@ df %>% summary()
 df <- df[complete.cases(df),]
 ```
 
-- Também vamos definir as variáveis qualitativas como fatores:
+- Também vamos definir as variáveis qualitativas como fatores e a variável ano, que só tem três valores distintos, como um fator ordinal:
 ```{r}
 df <- df %>%
   mutate(across(where(is.character), as.factor))
+
+df$year <- factor(df$year, ordered = TRUE)
 
 glimpse(df)
 ```
@@ -262,6 +264,14 @@ trn_df %>%
 ```{r}
 trn_df %>%
   ggplot(aes(flipper_length_mm, bill_length_mm, color = sex, size = body_mass_g)) +
+  geom_point(alpha = 0.5)
+```
+
+## Análise exploratória de dados {.smaller}
+
+```{r}
+trn_df %>%
+  ggplot(aes(flipper_length_mm, bill_length_mm, color = sex, size = body_mass_g)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~species)
 ```
@@ -346,30 +356,30 @@ Todos os modelos disponíveis estão listados em: [https://www.tidymodels.org/fi
 
 ![](parsnip_models.jpeg){fig-align='center'}
 
-## O que constitui um modelo: `parsnip` {.smaller}
+<!-- ## O que constitui um modelo: `parsnip` {.smaller} -->
 
-- Vamos definir alguns modelos que usaremos a seguir.
-```{r}
-tree_spec <- decision_tree() %>%
-  set_engine("rpart") %>%
-  set_mode("classification")
+<!-- - Vamos definir alguns modelos que usaremos a seguir. -->
+<!-- ```{r} -->
+<!-- tree_spec <- decision_tree() %>% -->
+<!--   set_engine("rpart") %>% -->
+<!--   set_mode("classification") -->
 
-knn_spec <- nearest_neighbor() %>%
-  set_engine("kknn") %>%
-  set_mode("classification")
+<!-- knn_spec <- nearest_neighbor() %>% -->
+<!--   set_engine("kknn") %>% -->
+<!--   set_mode("classification") -->
 
-rf_spec <- rand_forest() %>%
-  set_engine("ranger") %>%
-  set_mode("classification")
+<!-- rf_spec <- rand_forest() %>% -->
+<!--   set_engine("ranger") %>% -->
+<!--   set_mode("classification") -->
 
-log_spec <- logistic_reg() %>%
-  set_engine("glm") %>%
-  set_mode("classification")
+<!-- log_spec <- logistic_reg() %>% -->
+<!--   set_engine("glm") %>% -->
+<!--   set_mode("classification") -->
 
-svm_spec <- svm_rbf() %>%
-  set_engine("kernlab") %>%
-  set_mode("classification")
-```
+<!-- svm_spec <- svm_rbf() %>% -->
+<!--   set_engine("kernlab") %>% -->
+<!--   set_mode("classification") -->
+<!-- ``` -->
 
 ## Fluxo de trabalho: `workflows` {.smaller}
 
@@ -381,6 +391,10 @@ svm_spec <- svm_rbf() %>%
 
 ## Fluxo de trabalho: `workflows` {.smaller .scrollable}
 ```{r}
+tree_spec <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
 tree_spec %>%
   fit(sex ~ bill_length_mm+bill_depth_mm+flipper_length_mm+body_mass_g, data = trn_df)
 ```
@@ -507,6 +521,23 @@ tree_fit %>%
   autoplot()
 ```
 
+## Avaliação de modelos: `yardstick` {.smaller}
+
+- Vamos agora, avaliar o desempenho do modelo de árvore utilizando validação cruzada.
+```{r}
+tree_cv <- workflow() %>%
+  add_formula(sex ~ bill_length_mm+bill_depth_mm+flipper_length_mm+body_mass_g) %>%
+  add_model(tree_spec) %>%
+  fit_resamples(df_cv)
+```
+
+- Vejamos:
+```{r}
+tree_cv %>% collect_metrics()
+```
+
+
+
 ## Pré-processamento e feature engineering: `recipes` {.smaller}
 
 - Podemos querer modificar nossas variáveis por diversas razões:
@@ -514,7 +545,7 @@ tree_fit %>%
   - O modelo precisa que os dados tenham certas características (por exemplo, mesma escala para o $K$-NN);
   - A saída é melhor predita quando uma ou mais colunas são transformadas de alguma forma (também conhecido por "engenharia de atributos" ou "*feature engineering*").
     - Interações;
-    - Exansões polinomiais;
+    - Expansões polinomiais;
     - Componentes principais;
     - Dentre outras.
 
@@ -589,11 +620,15 @@ prepped_df
 ```{r}
 set.seed(1326)
 
-penguins_lr_wflow <- workflow() %>%
-  add_recipe(penguins_rec) %>%
-  add_model(log_spec)
+lr_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
 
-lr_fit <- penguins_lr_wflow %>%
+lr_wflow <- workflow() %>%
+  add_recipe(penguins_rec) %>%
+  add_model(lr_spec)
+
+lr_fit <- lr_wflow %>%
   fit(data = trn_df)
 ```
 
@@ -632,7 +667,225 @@ lr_fit %>% tidy(conf.int = TRUE)
 
 ## Otimização de hiperparâmetros: `tune` {.smaller}
 
+- Algumas quantidades relacionadas aos modelos ou algoritmos não podem ser estimadas diretamente dos dados: hiperparâmetros;
+
+- Alguns exemplos:
+  - Profundidade da árvore em árvores de decisão;
+  - Número de vizinhos no $K$-NN;
+  - Funções de ativação em redes neurais.
+  
+- A ideia é testar diferentes valores para os hiperparâmetros e medir o desempenho dos modelos;
+
+- Uma vez que os hiperparâmetros ótimos são determinados, os modelos podem ser finalizados sendo ajustados no conjunto de treinamento completo.
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+- Com a biblioteca `tidymodels`, podemos apenas marcar na especificação dos modelos com a função `tune()` quais hiperparâmetros desejamos que sejam otimizados;
+
+- Curiosamente, a função `tune()` retorna... ela mesma!
+```{r}
+tune()
+
+str(tune())
+
+tune("Espero que estejam gostando deste minicurso!")
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+- Vamos utilizar um modelo de Floresta Aleatória para ilustrar o processo de otimização de hiperparâmetros.
+
+- Este modelo possui três hiperparâmetros a serem otimizados:
+  - `mtry`: número de preditores selecionados aleatoriamente para definição dos nós;
+  - `trees`: número de árvores;
+  - `min_n`: tamanho mínimo dos nós.
+  
+## Otimização de hiperparâmetros: `tune` {.smaller}
+```{r}
+rf_spec <- rand_forest(mtry = tune(), trees = tune(), min_n = tune()) %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+rf_spec %>% translate()
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+```{r}
+rf_wflow <- workflow() %>%
+  add_recipe(penguins_rec) %>%
+  add_model(rf_spec)
+```
+
+```{r}
+rf_wflow %>% extract_parameter_set_dials()
+```
+
+```{r}
+rf_param <- rf_wflow %>%
+  extract_parameter_set_dials() %>%
+  update(mtry = mtry(c(2L,5L)))
+
+rf_param
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+```{r}
+ctrl <- control_grid(save_pred = TRUE)
+
+rf_res <- rf_wflow %>%
+  tune_grid(
+    resamples = df_cv,
+    grid = 25,
+    param_info = rf_param,
+    control = ctrl,
+    metrics = penguins_metrics
+  )
+
+rf_res
+```
+
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+```{r}
+autoplot(rf_res)
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+```{r}
+collect_metrics(rf_res)
+```
+
+```{r}
+show_best(rf_res, metric = "accuracy")
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+- A função `select_best()` seleciona o melhor conjunto de hiperparâmetros de acordo com uma métrica pré-estabelecida.
+```{r}
+best_acc <- rf_res %>%
+  select_best(metric = "accuracy")
+
+best_acc
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+- Usando a função `last_fit()` ajustamos o modelo final no conjunto de treinamento completo considerando o melhor conjunto de hiperparâmetros selecionado na etapa de validação cruzada.
+```{r}
+final_res <- rf_wflow %>%
+  finalize_workflow(best_acc) %>%
+  last_fit(df_split)
+```
+
+
+- E avaliamos no conjunto de teste.
+```{r}
+final_res %>% collect_metrics()
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+```{r}
+final_res %>%
+  extract_fit_parsnip()
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+```{r}
+final_res %>%
+  augment() %>%
+  conf_mat(truth = sex, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+## Otimização de hiperparâmetros: `tune` {.smaller}
+
+```{r}
+final_res %>%
+  augment() %>%
+  roc_curve(truth = sex, .pred_female) %>%
+  autoplot()
+```
+
+## Otimização de hiperparâmetros: *racing* {.smaller}
+
+- Relembrando, a ideia de *racing* é tornar o processo de *grid search* mais rápido.
+```{r}
+#| warning: false
+#| message: false
+library(finetune)
+
+ctrl <- control_race(save_pred = TRUE)
+
+set.seed(1326)
+rf_race_res <- rf_wflow %>%
+  tune_race_anova(
+    resamples = df_cv,
+    grid = 25,
+    param_info = rf_param,
+    control = ctrl,
+    metrics = penguins_metrics
+  )
+
+rf_race_res
+```
+
+## Otimização de hiperparâmetros: *racing* {.smaller}
+```{r}
+autoplot(rf_race_res)
+```
+
+
+## Otimização de hiperparâmetros: *racing* {.smaller}
+```{r}
+best_acc <- rf_race_res %>%
+  select_best(metric = "accuracy")
+
+best_acc
+```
+
+```{r}
+final_res <- rf_wflow %>%
+  finalize_workflow(best_acc) %>%
+  last_fit(df_split)
+```
+
+```{r}
+final_res %>% collect_metrics()
+```
+
+## Otimização de hiperparâmetros: *racing* {.smaller}
+```{r}
+final_res %>%
+  augment() %>%
+  conf_mat(truth = sex, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+## Otimização de hiperparâmetros: *racing* {.smaller}
+
+```{r}
+final_res %>%
+  augment() %>%
+  roc_curve(truth = sex, .pred_female) %>%
+  autoplot()
+```
+
 ## Avaliando muitos modelos: `workflowsets` {.smaller}
+
+- Em diversas situações, queremos comparar vários modelos e, ajustar um a um, torna o processo muito trabalhoso.
+
+- A função `workflow_set()` da biblioteca `workflowsets` gera uma conjunto de workflows.
+
+- Considere que desejamos comparar três modelos: regressão logística regularizada, árvore de decisão e floresta aleatória.
+
+```{r}
+rl_spec
+```
+
 
 ## Fim {.smaller}
 
